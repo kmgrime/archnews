@@ -15,7 +15,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: ["3.11", "3.12"]
+        python-version: ["3.11", "3.12", "3.13"]
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -50,6 +50,9 @@ jobs:
         uses: codecov/codecov-action@v4
         with:
           files: coverage.xml
+          # Optional: provide a Codecov token via repository secrets if needed for private repos.
+          # If `secrets.CODECOV_TOKEN` is not set (public repo), the action will still work.
+          token: ${{ secrets.CODECOV_TOKEN }}
           fail_ci_if_error: false
 
       - name: Upload test logs (artifact)
