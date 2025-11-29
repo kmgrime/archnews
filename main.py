@@ -4,9 +4,10 @@ archnews/main.py
 
 Simple CLI that prints an ASCII banner and a list of news articles (title and url).
 This file is intentionally minimal so it's easy to read while you're learning.
-"""
 
-from typing import Iterable, Tuple, List, Union
+This version avoids type annotations that produce linter/type-warn messages
+and keeps the runtime behavior and banner unchanged.
+"""
 
 from archnews.fetcher import NewsFetcher
 
@@ -21,53 +22,55 @@ BANNER = r"""
 """  # can be created with figlet and edited
 
 
-def _is_tuple_item(x: object) -> bool:
-    return isinstance(x, (tuple, list)) and len(x) >= 2
-
-
-def _print_articles(items: Iterable[Union[Tuple[str, str], str]]) -> None:
+def _print_articles(items):
     """
-    Print items in a simple numbered list. Items can be:
-      - (title, url) tuples returned by fetch_from_web()
+    Print items in a simple numbered list.
+
+    Items may be:
+      - (title, url) tuples or lists returned by fetch_from_web()
       - plain title strings returned by get_articles()
     """
     for i, it in enumerate(items, start=1):
-        if _is_tuple_item(it):
-            title, url = it[0], it[1]
-            if url:
-                print(f"{i}. {title} — {url}")
-            else:
-                print(f"{i}. {title}")
+        # Try to treat the item as a sequence with at least two elements.
+        if isinstance(it, (tuple, list)):
+            try:
+                title, url = it[0], it[1]
+            except Exception:
+                # Fallback if the sequence doesn't have expected shape.
+                title, url = str(it), ""
         else:
-            # plain title
-            print(f"{i}. {it}")
+            title, url = str(it), ""
+
+        if url:
+            print(f"{i}. {title} — {url}")
+        else:
+            print(f"{i}. {title}")
 
 
-def main() -> None:
+def main():
     print(BANNER)
     fetcher = NewsFetcher()
 
-    # Prefer a web fetch; if it returns nothing, fall back to sample titles.
+    # Prefer fetching from the web; fall back to bundled sample titles on error
+    # or when no results are returned.
     try:
-        raw = fetcher.fetch_from_web(limit=10)
+        articles = fetcher.fetch_from_web(limit=10) or []
     except Exception:
-        raw = []
+        articles = []
 
-    if raw:
-        # fetch_from_web returns (title, url) tuples
+    if articles:
         print("Latest articles (fetched from web):\n")
-        _print_articles(raw)
+        _print_articles(articles)
         return
 
-    # fallback: get_articles() returns a list of titles (strings)
     try:
-        titles: List[str] = fetcher.get_articles()
+        samples = fetcher.get_articles() or []
     except Exception:
-        titles = []
+        samples = []
 
-    if titles:
+    if samples:
         print("Sample articles:\n")
-        _print_articles(titles)
+        _print_articles(samples)
     else:
         print("No articles available.")
 

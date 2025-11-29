@@ -1,15 +1,19 @@
 # Minimal fetcher that parses the Arch Linux news table (#article-list)
 # and extracts article title + url using only the Python standard library.
+# Modernized typing to use built-in generics and PEP 604 unions.
 
 from html.parser import HTMLParser
-from typing import List, Tuple
+from collections.abc import Callable
+from typing import Any
 from urllib.parse import urljoin
 from urllib.request import Request, urlopen
 from urllib.error import URLError, HTTPError
 
 
-def log_call(func):
-    def wrapper(*args, **kwargs):
+def log_call(func: Callable[..., Any]) -> Callable[..., Any]:
+    """Small decorator used by tests/examples to show that a function was called."""
+
+    def wrapper(*args: Any, **kwargs: Any) -> Any:
         print("Calling", func.__name__)
         return func(*args, **kwargs)
 
@@ -35,14 +39,15 @@ class _ArticleTableParser(HTMLParser):
         self._current_td_index = 0  # 1-based index for tds inside current tr
         self._in_anchor = False
         self._current_href: str | None = None
-        self._current_text_parts: List[str] = []
-        self.articles: List[Tuple[str, str]] = []
+        self._current_text_parts: list[str] = []
+        self.articles: list[tuple[str, str]] = []
 
-    def handle_starttag(self, tag: str, attrs: List[Tuple[str, str]]) -> None:
+    def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
         tag = tag.lower()
-        attrd = {k.lower(): v for k, v in attrs}
+        # attrs may contain None values for some attributes, keep them as-is
+        attrd = {k.lower(): v for k, v in attrs if k}
 
-        if tag == "table" and attrd.get("id", "") == "article-list":
+        if tag == "table" and (attrd.get("id") or "") == "article-list":
             self._in_table = True
             return
 
@@ -71,7 +76,7 @@ class _ArticleTableParser(HTMLParser):
             href = attrd.get("href")
             if href:
                 self._in_anchor = True
-                self._current_href = href
+                self._current_href = href  # keep raw href; will be made absolute later
                 self._current_text_parts = []
 
     def handle_data(self, data: str) -> None:
@@ -112,15 +117,15 @@ class NewsFetcher:
     article table, returning (title, url) pairs.
 
     Methods
-    - fetch_from_web(limit, timeout) -> List[(title, full_url)]
-    - get_articles() -> List[str]  (titles only; falls back to samples)
+    - fetch_from_web(limit, timeout) -> list[(title, full_url)]
+    - get_articles() -> list[str]  (titles only; falls back to samples)
     """
 
     def __init__(self) -> None:
         self.source_url = "https://archlinux.org/news/"
 
     @log_call
-    def get_articles(self) -> List[str]:
+    def get_articles(self) -> list[str]:
         # Try to fetch two real article titles, otherwise return sample data.
         try:
             items = self.fetch_from_web(limit=2, timeout=5)
@@ -132,7 +137,7 @@ class NewsFetcher:
 
     def fetch_from_web(
         self, limit: int = 10, timeout: int = 5
-    ) -> List[Tuple[str, str]]:
+    ) -> list[tuple[str, str]]:
         """
         Fetch the news page and extract (title, full_url) from the #article-list table.
 
@@ -153,8 +158,8 @@ class NewsFetcher:
         parser.feed(html)
 
         # Build absolute URLs and deduplicate while preserving order
-        seen = set()
-        results: List[Tuple[str, str]] = []
+        seen: set[tuple[str, str]] = set()
+        results: list[tuple[str, str]] = []
         for title, href in parser.articles:
             full = urljoin(self.source_url, href)
             key = (title, full)
