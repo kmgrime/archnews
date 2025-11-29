@@ -9,7 +9,7 @@
 
 [![CI](https://github.com/kmgrime/archnews/actions/workflows/ci.yml/badge.svg)](https://github.com/kmgrime/archnews/actions/workflows/ci.yml)
 [![codecov](https://codecov.io/gh/kmgrime/archnews/branch/main/graph/badge.svg)](https://codecov.io/gh/kmgrime/archnews)
-[![Python versions](https://img.shields.io/badge/python-3.10%20%7C%203.11%20%7C%203.12-blue)](https://www.python.org/)
+[![Python versions](https://img.shields.io/badge/python-3.11%20%7C%203.12-blue)](https://www.python.org/)
 
 ---
 A small CLI tool to fetch the Arch Linux news.
