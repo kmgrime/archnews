@@ -50,9 +50,6 @@ jobs:
         uses: codecov/codecov-action@v4
         with:
           files: coverage.xml
-          # Optional: provide a Codecov token via repository secrets if needed for private repos.
-          # If `secrets.CODECOV_TOKEN` is not set (public repo), the action will still work.
-          token: ${{ secrets.CODECOV_TOKEN }}
           fail_ci_if_error: false
 
       - name: Upload test logs (artifact)
